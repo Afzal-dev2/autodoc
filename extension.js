@@ -1,45 +1,5 @@
-// // The module 'vscode' contains the VS Code extensibility API
-// // Import the module and reference it with the alias vscode in your code below
-// const vscode = require('vscode');
-
-// // This method is called when your extension is activated
-// // Your extension is activated the very first time the command is executed
-
-// /**
-//  * @param {vscode.ExtensionContext} context
-//  */
-// function activate(context) {
-
-// 	// Use the console to output diagnostic information (console.log) and errors (console.error)
-// 	// This line of code will only be executed once when your extension is activated
-// 	console.log('Congratulations, your extension "autodoc" is now active!');
-
-// 	// The command has been defined in the package.json file
-// 	// Now provide the implementation of the command with  registerCommand
-// 	// The commandId parameter must match the command field in package.json
-// 	const disposable = vscode.commands.registerCommand('autodoc.helloWorld', function () {
-// 		// The code you place here will be executed every time your command is executed
-
-// 		// Display a message box to the user
-// 		vscode.window.showInformationMessage('Hello World from AutoDoc!');
-// 	});
-
-// 	context.subscriptions.push(disposable);
-// }
-
-// // This method is called when your extension is deactivated
-// function deactivate() {}
-
-// module.exports = {
-// 	activate,
-// 	deactivate
-// }
-
-
 const vscode = require('vscode');
 const axios = require('axios');
-const path = require('path');
-const fs = require('fs');
 const { exec } = require('child_process');
 
 function createPreviewPanel(documentation, mermaidSyntax) {
@@ -95,22 +55,6 @@ function generateHTMLContent(documentation, mermaidSyntax) {
         </html>
     `;
 }
-function formatMermaidCode(singleLineCode) {
-    return singleLineCode
-        .replace(/graph\s+(\w+)/, "graph $1\n") // Ensure "graph TD" is on its own line
-        .replace(/(\w+)\[.*?\]/g, "\n    $1$&") // Add newlines before node definitions
-        .replace(/-->\s*/g, " --> ")            // Standardize spacing for connectors
-        .replace(/(\w)\s*--\s*(\w+)/g, "\n    $1 -- $2") // Format Yes/No branches
-        .replace(/(\w)\s*-->?\s*(\w)/g, "\n    $1 --> $2") // Format edges
-        .replace(/\}\s*(\w)/g, "}\n    $1");    // Add newline after blocks
-}
-
-// Example usage
-// const singleLineCode = "graph TD A[Start] --> B{If array length <= 1} B -- Yes --> C[Return array] B -- No --> D[Find mid index]";
-
-
-
-// Example
 
 async function handleGenerateAndPreview() {
     const editor = vscode.window.activeTextEditor;
@@ -118,7 +62,6 @@ async function handleGenerateAndPreview() {
         vscode.window.showErrorMessage('No active editor found.');
         return;
     }
-
     const code = editor.document.getText();
     vscode.window.showInformationMessage('Generating documentation...');
     const documentation = await generateDocumentation(code);
@@ -126,10 +69,7 @@ async function handleGenerateAndPreview() {
     if (!documentation) {
         return;
     }
-
     const mermaidSyntax = extractMermaidDiagram(documentation);
-	// const mermaidSyntax = "graph TD A[Start] --> B{If array length <= 1} B -- Yes --> C[Return array] B -- No --> D[Find mid index]";
-
     if (!mermaidSyntax) {
         vscode.window.showWarningMessage('No Mermaid diagram found in the response.');
     }
@@ -166,7 +106,6 @@ Additionally, provide a mermaid js syntax in sequence diagram format to visualiz
 		const response = await axios.request(options);
 		const gptResponse = response.data;
 		// const gptResponse = '# Documentation for LongestPalindromicSubstring Java Code\n\n## Overview\nThe `LongestPalindromicSubstring` class contains a method to find the longest palindromic substring within a given string. A palindromic substring is a sequence of characters that reads the same backward as forward. The implementation uses dynamic programming to efficiently determine the longest palindromic substring.\n\n## Class Structure\n```java\npublic class LongestPalindromicSubstring {\n    public static void main(String[] …Programming Logic]\n    E --> F[Return Longest Palindromic Substring]\n    F --> G[Output Result]\n```\n\n### Explanation of the Mermaid Diagram\n- The diagram illustrates the flow of the program:\n  - The user provides input (a string).\n  - The `LongestPalindromicSubstring` class processes the input through the `main` method.\n  - The `calculate` method implements the logic to find the longest palindromic substring using dynamic programming.\n  - Finally, the result is returned and output to the user.'
-		
 		console.log(gptResponse);
 		return gptResponse; // GPT-4 response
 	} catch (error) {
@@ -174,28 +113,6 @@ Additionally, provide a mermaid js syntax in sequence diagram format to visualiz
 		vscode.window.showErrorMessage('Failed to generate documentation.');
 		return null;
 	}
-}
-
-// Generate a Diagram using Mermaid.js
-async function generateDiagram(diagramText) {
-	const filePath = require('os').tmpdir();
-	const diagramFilePath = filePath + '/arch_diagram.mmd';
-	const outputFilePath = filePath + '/arch_diagram.svg';
-
-	// Save Mermaid text to a file
-	fs.writeFileSync(diagramFilePath, diagramText);
-
-	// Render to SVG
-	return new Promise((resolve, reject) => {
-		exec(`mmdc -i ${diagramFilePath} -o ${outputFilePath}`, (error) => {
-			if (error) {
-				console.error('Error generating diagram:', error);
-				reject(error);
-			} else {
-				resolve(outputFilePath);
-			}
-		});
-	});
 }
 
 // Upload Documentation and Diagram to Confluence
@@ -321,26 +238,6 @@ function activate2(context) {
 		console.log("Printing the type of ");
 
 		console.log(typeof gptResponse, gptResponse);
-
-		// const mermaidDiagram = extractMermaidDiagram(gptResponse);
-		// if (mermaidDiagram) {
-		// 	console.log('Mermaid Diagram:', mermaidDiagram);
-		// }
-
-
-		// let diagramPath = null;
-
-		// if (mermaidDiagram) {
-		// 	vscode.window.showInformationMessage('Generating architecture diagram...');
-		// 	try {
-		// 		diagramPath = await generateDiagram(gptResponse.trim());
-
-		// 	} catch (error) {
-		// 		console.log("Diagram error: " + error);
-
-		// 		vscode.window.showErrorMessage('Failed to generate diagram.');
-		// 	}
-		// }
 
 		// Ask user to upload the documentation
 		vscode.window.showInformationMessage('Documentation generated. Do you want to upload it to Confluence?', 'Yes', 'No')

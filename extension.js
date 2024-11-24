@@ -1,19 +1,18 @@
 const vscode = require('vscode');
 const axios = require('axios');
-const { exec } = require('child_process');
 
 function createPreviewPanel(documentation, mermaidSyntax) {
-    const panel = vscode.window.createWebviewPanel(
-        'autodocPreview',
-        'Generated Documentation',
-        vscode.ViewColumn.Beside,
-        { enableScripts: true }
-    );
+	const panel = vscode.window.createWebviewPanel(
+		'autodocPreview',
+		'Generated Documentation',
+		vscode.ViewColumn.Beside,
+		{ enableScripts: true }
+	);
 
-    panel.webview.html = generateHTMLContent(documentation, mermaidSyntax);
+	panel.webview.html = generateHTMLContent(documentation, mermaidSyntax);
 }
 function generateHTMLContent(documentation, mermaidSyntax) {
-    return `
+	return `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -57,23 +56,45 @@ function generateHTMLContent(documentation, mermaidSyntax) {
 }
 
 async function handleGenerateAndPreview() {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-        vscode.window.showErrorMessage('No active editor found.');
-        return;
-    }
-    const code = editor.document.getText();
-    vscode.window.showInformationMessage('Generating documentation...');
-    const documentation = await generateDocumentation(code);
+	const editor = vscode.window.activeTextEditor;
+	if (!editor) {
+		vscode.window.showErrorMessage('No active editor found.');
+		return;
+	}
+	const code = editor.document.getText();
+	vscode.window.showInformationMessage('Generating documentation...');
+	const documentation = await generateDocumentation(code);
+	// Parse the response.result JSON string
+const extractedJSON = JSON.parse(documentation.result.match(/({.*})/s)[1]);
 
-    if (!documentation) {
-        return;
-    }
-    const mermaidSyntax = extractMermaidDiagram(documentation);
-    if (!mermaidSyntax) {
-        vscode.window.showWarningMessage('No Mermaid diagram found in the response.');
-    }
-    createPreviewPanel(documentation, mermaidSyntax || '');
+// Assign fields to an object
+const documentationObject = {
+  title: extractedJSON.title,
+  overview: extractedJSON.overview,
+  classes: extractedJSON.classes,
+  diagrams: extractedJSON.diagrams,
+  conclusion: extractedJSON.conclusion
+};
+
+// Example Usage
+console.log("Printing the documentation object");
+
+console.log(documentationObject.title);        // "Linked List Implementation"
+console.log(documentationObject.overview);     // Overview description
+console.log(documentationObject.classes[0]);   // Details of the "Node" class
+console.log(documentationObject.diagrams[0]);  // Mermaid diagram details
+
+	// console.log("Printing the documentation");
+
+	// console.log(documentation);
+	if (!documentation) {
+		return;
+	}
+	const mermaidSyntax = extractMermaidDiagram(documentation);
+	if (!mermaidSyntax) {
+		vscode.window.showWarningMessage('No Mermaid diagram found in the response.');
+	}
+	createPreviewPanel(documentation, mermaidSyntax || '');
 }
 
 // Generate Documentation using GPT-4 API
@@ -90,11 +111,36 @@ async function generateDocumentation(code) {
 			messages: [
 				{
 					role: 'user',
-					content: `Generate comprehensive documentation for the following code:
-                    
-${code}
+					content: `You are a documentation generator. Analyze the provided code or file content and generate a structured JSON representation of its documentation. Ensure the JSON format is universal and adaptable for any programming language or file type. The JSON object should contain the following keys:
 
-Additionally, provide a mermaid js syntax in sequence diagram format to visualize an high level architecture. Return the Mermaid code inside a markdown code block so it preserves formatting. Also kindly format the output according to Atlasian Confluence standards.`
+1. title: A concise title derived from the file or its purpose.
+2. overview: A brief explanation of the file's purpose and functionality.
+3. classes: An array of objects, each representing a class or component in the file (if applicable). Each class object should contain:
+   - name: The name of the class.
+   - description: A brief description of the class.
+   -attributes: An array of attributes with:
+     - name: The name of the attribute.
+     - type: The data type (if applicable).
+     - description: A brief explanation of its role.
+   - methods: An array of method objects with:
+     - name: The method name.
+     - parameters: An array of parameter names and types (if applicable).
+     - description: A detailed explanation of what the method does.
+4. functions: An array of standalone functions (if any) with:
+   - name: The function name.
+   - parameters: An array of parameter names and types (if applicable).
+   - description: A detailed explanation of what the function does.
+5. usageExamples: An array of code snippets showing how to use the classes, functions, or file features.
+6. diagrams: An array of objects containing visual representations (like sequence diagrams). Each object should have:
+   - type: The type of diagram (e.g., sequence, flowchart, architecture).
+   - description: A brief description of the diagram.
+   - code: Mermaid syntax or equivalent for the diagram. Return the Mermaid code inside a markdown code block so it preserves formatting
+7. conclusion: A summary of the file's functionality and any additional remarks.
+
+Here's the code to analyze:
+                    
+${code}`
+
 				}
 			],
 			web_access: false
@@ -228,6 +274,8 @@ function activate2(context) {
 		const code = editor.document.getText();
 		vscode.window.showInformationMessage('Generating documentation...');
 		const gptResponse = await generateDocumentation(code);
+
+
 		//const gptResponse = '# Documentation for LongestPalindromicSubstring Java Code\n\n## Overview\nThe `LongestPalindromicSubstring` class contains a method to find the longest palindromic substring within a given string. A palindromic substring is a sequence of characters that reads the same backward as forward. The implementation uses dynamic programming to efficiently determine the longest palindromic substring.\n\n## Class Structure\n```java\npublic class LongestPalindromicSubstring {\n    public static void main(String[] …Programming Logic]\n    E --> F[Return Longest Palindromic Substring]\n    F --> G[Output Result]\n```\n\n### Explanation of the Mermaid Diagram\n- The diagram illustrates the flow of the program:\n  - The user provides input (a string).\n  - The `LongestPalindromicSubstring` class processes the input through the `main` method.\n  - The `calculate` method implements the logic to find the longest palindromic substring using dynamic programming.\n  - Finally, the result is returned and output to the user.'
 		//const gptResponse = "# Documentation for SelectionSort Class\n\n## Overview\nThe `SelectionSort` class implements the selection sort algorithm, which is a simple and intuitive sorting algorithm. It sorts an array of integers in ascending order by repeatedly selecting the minimum element from the unsorted portion of the array and swapping it with the first unsorted element.\n\n## Class Structure\n\n### Fields\n- `int n`: The number of elements in the array. In this implementation, it is set to 5.\n- `int[] arr`: An array of …rted: `{ 11, 12, 22, 25, 64 }`\n\n## Usage\nTo use the `SelectionSort` class, simply run the `main` method. The sorted array will be printed to the console.\n\n---\n\n## Mermaid Diagram\n\n```mermaid\nclassDiagram\n    class SelectionSort {\n        +int n\n        +int[] arr\n        +main(String[] args)\n        +printArray()\n        +selectionSort()\n    }\n```\n\nThis diagram represents the `SelectionSort` class, its fields, and its methods, providing a high-level overview of its structure and functionality."
 		if (!gptResponse) {
@@ -247,7 +295,7 @@ function activate2(context) {
 					// const result = await uploadToConfluence(gptResponse.trim(), diagramPath);
 					// destructure the response and only use the result
 					console.log("GPT Response: ", gptResponse.result);
-					
+
 					const result2 = await uploadToConfluence2(gptResponse.result);
 
 
@@ -264,9 +312,9 @@ function activate2(context) {
 	context.subscriptions.push(disposable);
 }
 function activate(context) {
-    let disposable = vscode.commands.registerCommand('autodoc.autodoc', handleGenerateAndPreview);
+	let disposable = vscode.commands.registerCommand('autodoc.autodoc', handleGenerateAndPreview);
 
-    context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable);
 }
 function extractMermaidDiagram(gptResponse) {
 	try {
@@ -282,7 +330,7 @@ function extractMermaidDiagram(gptResponse) {
 		const match = gptResponse.match(mermaidRegex);
 		console.log("Printing the match");
 		console.log(match);
-		
+
 		if (match && match[1]) {
 			const mermaidDiagram = match[1];
 			console.log('Extracted Mermaid Diagram:', mermaidDiagram);
